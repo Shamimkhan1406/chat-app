@@ -8,7 +8,20 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
+  final _form = GlobalKey<FormState>();
+  // This variable is used to toggle between login and signup forms
+  // and to change the button text accordingly.
   var _isLogin = true;
+  var _enteredEmail = '';
+  var _enteredPassword = '';
+  void _submit(){
+    final isvalid = _form.currentState!.validate();
+    if(isvalid){
+      _form.currentState!.save();
+      print('Email: $_enteredEmail');
+      print('Password: $_enteredPassword');
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -32,7 +45,9 @@ class _AuthScreenState extends State<AuthScreen> {
                 margin: EdgeInsets.all(20),
                 child: SingleChildScrollView(
                   child: Padding(padding: EdgeInsets.all(16),
-                    child: Form(child: Column(
+                    child: Form(
+                      key: _form,
+                      child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         TextFormField(
@@ -42,12 +57,30 @@ class _AuthScreenState extends State<AuthScreen> {
                           keyboardType: TextInputType.emailAddress,
                           textCapitalization: TextCapitalization.none,
                           autocorrect: false,
+                          validator: (value) {
+                            if (value == null || value.isEmpty || !value.contains('@')) {
+                              return 'Please enter a valid email address.';
+                            }
+                            return null;
+                          },
+                          onSaved: (value) {
+                            _enteredEmail = value!;
+                          },
                         ),
                         TextFormField(
                           decoration: InputDecoration(
                             labelText: 'Password',
                           ),
                           obscureText: true,
+                          validator: (value) {
+                            if (value == null || value.isEmpty || value.length < 6) {
+                              return 'Password must be at least 6 characters long.';
+                            }
+                            return null;
+                          },
+                          onSaved: (value) {
+                            _enteredPassword = value!;
+                          },
                         ),
                         SizedBox(height: 12),
                         ElevatedButton(
@@ -55,7 +88,7 @@ class _AuthScreenState extends State<AuthScreen> {
                             backgroundColor: Theme.of(context).colorScheme.primaryContainer,
                             foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
                           ),
-                          onPressed: (){}, 
+                          onPressed: _submit, 
                           child: Text(_isLogin ? 'log in' : 'Sign up'),
                         ),
                         TextButton(
