@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+final _firebase = FirebaseAuth.instance;
+// This screen is used for both login and signup.
+// It toggles between the two forms based on the user's choice.
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -14,14 +19,36 @@ class _AuthScreenState extends State<AuthScreen> {
   var _isLogin = true;
   var _enteredEmail = '';
   var _enteredPassword = '';
-  void _submit(){
+  void _submit() async {
     final isvalid = _form.currentState!.validate();
-    if(isvalid){
-      _form.currentState!.save();
-      print('Email: $_enteredEmail');
-      print('Password: $_enteredPassword');
+    if (!isvalid) {
+      return;
+    }
+    _form.currentState!.save();
+    try {
+      if (_isLogin) {
+        //log in methode
+        final userCredentials = await _firebase.signInWithEmailAndPassword(
+          email: _enteredEmail,
+          password: _enteredPassword,
+        );
+        print(userCredentials);
+      } else {
+        //sign up methode
+        final userCredentials = await _firebase.createUserWithEmailAndPassword(
+          email: _enteredEmail,
+          password: _enteredPassword,
+        );
+        print(userCredentials);
+      }
+    } on FirebaseAuthException catch (error) {
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message ?? 'Authentication faild')),
+      );
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -44,63 +71,77 @@ class _AuthScreenState extends State<AuthScreen> {
               Card(
                 margin: EdgeInsets.all(20),
                 child: SingleChildScrollView(
-                  child: Padding(padding: EdgeInsets.all(16),
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
                     child: Form(
                       key: _form,
                       child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        TextFormField(
-                          decoration: InputDecoration(
-                            labelText: 'Email address',
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextFormField(
+                            decoration: InputDecoration(
+                              labelText: 'Email address',
+                            ),
+                            keyboardType: TextInputType.emailAddress,
+                            textCapitalization: TextCapitalization.none,
+                            autocorrect: false,
+                            validator: (value) {
+                              if (value == null ||
+                                  value.isEmpty ||
+                                  !value.contains('@')) {
+                                return 'Please enter a valid email address.';
+                              }
+                              return null;
+                            },
+                            onSaved: (value) {
+                              _enteredEmail = value!;
+                            },
                           ),
-                          keyboardType: TextInputType.emailAddress,
-                          textCapitalization: TextCapitalization.none,
-                          autocorrect: false,
-                          validator: (value) {
-                            if (value == null || value.isEmpty || !value.contains('@')) {
-                              return 'Please enter a valid email address.';
-                            }
-                            return null;
-                          },
-                          onSaved: (value) {
-                            _enteredEmail = value!;
-                          },
-                        ),
-                        TextFormField(
-                          decoration: InputDecoration(
-                            labelText: 'Password',
+                          TextFormField(
+                            decoration: InputDecoration(labelText: 'Password'),
+                            obscureText: true,
+                            validator: (value) {
+                              if (value == null ||
+                                  value.isEmpty ||
+                                  value.length < 6) {
+                                return 'Password must be at least 6 characters long.';
+                              }
+                              return null;
+                            },
+                            onSaved: (value) {
+                              _enteredPassword = value!;
+                            },
                           ),
-                          obscureText: true,
-                          validator: (value) {
-                            if (value == null || value.isEmpty || value.length < 6) {
-                              return 'Password must be at least 6 characters long.';
-                            }
-                            return null;
-                          },
-                          onSaved: (value) {
-                            _enteredPassword = value!;
-                          },
-                        ),
-                        SizedBox(height: 12),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                            foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                          SizedBox(height: 12),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  Theme.of(
+                                    context,
+                                  ).colorScheme.primaryContainer,
+                              foregroundColor:
+                                  Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimaryContainer,
+                            ),
+                            onPressed: _submit,
+                            child: Text(_isLogin ? 'log in' : 'Sign up'),
                           ),
-                          onPressed: _submit, 
-                          child: Text(_isLogin ? 'log in' : 'Sign up'),
-                        ),
-                        TextButton(
-                          onPressed: (){
-                            setState(() {
-                              _isLogin = !_isLogin;
-                            });
-                          }, 
-                          child: Text(_isLogin ? 'Create new account' : 'I already have an account.Log in.'),
-                        )
-                      ],
-                    )),
+                          TextButton(
+                            onPressed: () {
+                              setState(() {
+                                _isLogin = !_isLogin;
+                              });
+                            },
+                            child: Text(
+                              _isLogin
+                                  ? 'Create new account'
+                                  : 'I already have an account.Log in.',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
