@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:chat_app/widgets/user_image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -20,9 +22,26 @@ class _AuthScreenState extends State<AuthScreen> {
   var _isLogin = true;
   var _enteredEmail = '';
   var _enteredPassword = '';
+  File? _selectedImage;
   void _submit() async {
     final isvalid = _form.currentState!.validate();
-    if (!isvalid) {
+    if (!isvalid || !_isLogin && _selectedImage == null) {
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _isLogin
+                ? 'Please enter valid email and password'
+                : 'Please enter valid email, password and image',
+          ),
+        ),
+      );
+      if (_selectedImage == null && !_isLogin) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Please pick an image')),
+        );
+      }
+      // If the form is not valid, we show a snackbar and return early.
       return;
     }
     _form.currentState!.save();
@@ -80,7 +99,10 @@ class _AuthScreenState extends State<AuthScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (!_isLogin)
-                            UserImagePicker(),
+                            UserImagePicker(onPickedImage: (pickedImage) {
+                              _selectedImage = pickedImage;
+                            
+                            },),
                           TextFormField(
                             decoration: InputDecoration(
                               labelText: 'Email address',
