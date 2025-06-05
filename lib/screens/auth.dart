@@ -24,15 +24,18 @@ class _AuthScreenState extends State<AuthScreen> {
   var _enteredEmail = '';
   var _enteredPassword = '';
   File? _selectedImage;
+  var _isAuthenticating = false;
   void _submit() async {
     final isvalid = _form.currentState!.validate();
     if (!isvalid || !_isLogin && _selectedImage == null) {
-      
       // If the form is not valid, we show a snackbar and return early.
       return;
     }
     _form.currentState!.save();
     try {
+      setState(() {
+        _isAuthenticating = true;
+      });
       if (_isLogin) {
         //log in methode
         final userCredentials = await _firebase.signInWithEmailAndPassword(
@@ -46,7 +49,10 @@ class _AuthScreenState extends State<AuthScreen> {
           email: _enteredEmail,
           password: _enteredPassword,
         );
-        final storageRef = FirebaseStorage.instance.ref().child('user_images').child('${userCredentials.user!.uid}.jpg');
+        final storageRef = FirebaseStorage.instance
+            .ref()
+            .child('user_images')
+            .child('${userCredentials.user!.uid}.jpg');
         await storageRef.putFile(_selectedImage!);
         final imageUrl = await storageRef.getDownloadURL();
         print(imageUrl);
@@ -57,6 +63,9 @@ class _AuthScreenState extends State<AuthScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(error.message ?? 'Authentication faild')),
       );
+      setState(() {
+        _isAuthenticating = false;
+      });
     }
   }
 
@@ -90,10 +99,11 @@ class _AuthScreenState extends State<AuthScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (!_isLogin)
-                            UserImagePicker(onPickedImage: (pickedImage) {
-                              _selectedImage = pickedImage;
-                            
-                            },),
+                            UserImagePicker(
+                              onPickedImage: (pickedImage) {
+                                _selectedImage = pickedImage;
+                              },
+                            ),
                           TextFormField(
                             decoration: InputDecoration(
                               labelText: 'Email address',
@@ -129,32 +139,35 @@ class _AuthScreenState extends State<AuthScreen> {
                             },
                           ),
                           SizedBox(height: 12),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  Theme.of(
-                                    context,
-                                  ).colorScheme.primaryContainer,
-                              foregroundColor:
-                                  Theme.of(
-                                    context,
-                                  ).colorScheme.onPrimaryContainer,
+                          if (_isAuthenticating) const CircularProgressIndicator(),
+                          if (!_isAuthenticating)
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    Theme.of(
+                                      context,
+                                    ).colorScheme.primaryContainer,
+                                foregroundColor:
+                                    Theme.of(
+                                      context,
+                                    ).colorScheme.onPrimaryContainer,
+                              ),
+                              onPressed: _submit,
+                              child: Text(_isLogin ? 'log in' : 'Sign up'),
                             ),
-                            onPressed: _submit,
-                            child: Text(_isLogin ? 'log in' : 'Sign up'),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              setState(() {
-                                _isLogin = !_isLogin;
-                              });
-                            },
-                            child: Text(
-                              _isLogin
-                                  ? 'Create new account'
-                                  : 'I already have an account.Log in.',
+                          if (!_isAuthenticating)
+                            TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  _isLogin = !_isLogin;
+                                });
+                              },
+                              child: Text(
+                                _isLogin
+                                    ? 'Create new account'
+                                    : 'I already have an account.Log in.',
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     ),
