@@ -41,7 +41,7 @@ class _NewMessageState extends State<NewMessage> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(left: 15, right: 1, bottom: 14),
+      padding: EdgeInsets.only(left: 15, right: 1, bottom: 50),
       child: Row(
         children: [
           Expanded(
