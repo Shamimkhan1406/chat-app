@@ -25,6 +25,16 @@ class _NewMessageState extends State<NewMessage> {
     _messageController.clear();
 
     //send to firebase
+    final user = FirebaseAuth.instance.currentUser!;
+    final userData = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+
+    FirebaseFirestore.instance.collection('chats').add({
+      'text': enteredMessage,
+      'createdAt': Timestamp.now(),
+      'userId': user.uid,
+      'username': userData.data()!['username'],
+      'userImage': userData.data()!['image_url'],
+    });
 
     
   }
